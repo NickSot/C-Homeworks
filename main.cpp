@@ -7,7 +7,19 @@
 using namespace std;
 
 class LOAException{
+	string message_;
+public:
+	LOAException(string message){
+		message_ = message;
+	}
 
+	void print(){
+		cout << message_ << endl;
+	}
+
+	string get_message() const{
+		return message_;
+	}
 };
 
 class ListOfArrays {
@@ -89,10 +101,11 @@ class ListOfArrays {
 
         void show(){
         	for (int i = 0; i < size(); i++){
-        		cout << current_->data_[i] << " ";
+        		cout << current_->data_[i];
+        		if (i != size() - 1){
+        			cout << " ";
+        		}
         	}
-
-        	cout << endl;
         }
         
         double average(){
@@ -176,16 +189,38 @@ class ListOfArrays {
 	}
 
     ListOfArrays(const ListOfArrays& other){
-    	head_ = other.head_;
-    	head_->next_ = other.head_->next_;
-    	head_->prev_ = other.head_->prev_;
+    	head_ = new ArrayNode(0, 0);
+    	head_->next_ = head_;
+    	head_->prev_ = head_;
+
+    	ArrayNode * node = other.head_->next_;
+
+    	while (node != other.head_){
+    		push(node->data_, 0, node->size_);
+
+    		node = node->next_;
+    	}
+    	// head_ = other.head_;
+    	// head_->next_ = other.head_->next_;
+    	// head_->prev_ = other.head_->prev_;
     	size_ = other.size_;
     }
 
 	ListOfArrays& operator=(const ListOfArrays& other){
-    	head_ = other.head_;
-    	head_->next_ = other.head_->next_;
-    	head_->prev_ = other.head_->prev_;
+    	head_ = new ArrayNode(0, 0);
+    	head_->next_ = head_;
+    	head_->prev_ = head_;
+
+    	ArrayNode * node = other.head_->next_;
+
+    	while (node != other.head_){
+    		push(node->data_, 0, node->size_);
+
+    		node = node->next_;
+    	}
+    	// head_ = other.head_;
+    	// head_->next_ = other.head_->next_;
+    	// head_->prev_ = other.head_->prev_;
     	size_ = other.size_;
 
 		return *this;
@@ -288,6 +323,8 @@ class ListOfArrays {
     		it.ordered(ascending);
     	}
 
+    	
+
     	return *this;
     }
 
@@ -312,8 +349,16 @@ class ListOfArrays {
     }
 
     void show(){
+    	int counter = 0;
+
     	for (Iterator it = begin(); it != end(); it++){
     		it.show();
+
+    		if (size_ > 1 && counter != size_ - 1){
+    			cout << "; ";
+    		}
+
+    		counter++;
     	}
     }
 };
@@ -335,7 +380,7 @@ ListOfArrays splitAndConvert(string str){
 		current = v[i].find(";");
 
 		if (current != string::npos){
-			v[i].erase(1);
+			v[i].erase(v[i].length() - 1);
 			
 			arr[i] = stoi(v[i]);
 
@@ -351,6 +396,14 @@ ListOfArrays splitAndConvert(string str){
 	return ret_val;
 }
 
+bool contains(string str, string value){
+	if (str.find(value) != string::npos){
+		return true;
+	}
+
+	return false;
+}
+
 void parseAndExecute(ListOfArrays ll, vector<string> v){
 	int current;
 
@@ -358,46 +411,61 @@ void parseAndExecute(ListOfArrays ll, vector<string> v){
 
 	string to_execute;
 
+	LOAException ex("N");
+
 	for (int i = 0; i < v.size(); i++){
 		string command = v[i];
 
+		current = 0;
+
 		previous = 0;
+
+		ListOfArrays::Iterator it = ll.begin();
+
+		bool iterator_mode = false;
 
 		while (current != string::npos){
 			current = command.find(".");
 
 			to_execute = command.substr(previous, current);
 
-			if (to_execute == "show"){
-				cout << ">> ";
-				ll.show();
+			if (contains(to_execute, "show")){
+				if (iterator_mode){
+					cout << "> > ";
+					it.show();
+					cout << endl;
+				}else{
+					cout << "> > ";
+					ll.show();
+					cout << endl;
+				}
 			}
 
-			if (to_execute == "averages"){
+			else if (contains(to_execute, "averages")){
 				double arr[ll.size()];
-				cout << ">> ";
+				cout << "> > ";
 				ll.averages(arr);
 			}
 
-			if (to_execute == "medians"){
+			else if (contains(to_execute, "medians")){
 				double arr[ll.size()];
-				cout << ">> ";
+				cout << "> > ";
 				ll.medians(arr);
 			}
 
-			if (to_execute == "sizes"){
+			else if (contains(to_execute, "sizes")){
 				int arr[ll.size()];
-				cout << ">> ";
+				cout << "> > ";
 				ll.sizes(arr);
 			}
 
-			if (to_execute == "sums"){
+			else if (contains(to_execute, "sums")){
 				int arr[ll.size()];
-				cout << ">> ";
+				cout << "> > ";
 				ll.sums(arr);
 			}
 
-			if (to_execute.find("mul:") != string::npos){
+			else if (contains(to_execute, "mul:")){
 				to_execute.erase(0, to_execute.find(":") + 1);
 
 				int coef = stoi(to_execute);
@@ -405,7 +473,7 @@ void parseAndExecute(ListOfArrays ll, vector<string> v){
 				ll *= coef;
 			}
 
-			if (to_execute.find("add:") != string::npos){
+			else if (contains(to_execute, "add:")){
 				to_execute.erase(0, to_execute.find(":") + 1);
 
 				int addend = stoi(to_execute);
@@ -413,39 +481,90 @@ void parseAndExecute(ListOfArrays ll, vector<string> v){
 				ll += addend;
 			}
 
-			if (to_execute.find("ordered:") != string::npos){
+			else if (contains(to_execute, "ordered:")){
 				to_execute.erase(0, to_execute.find(":") + 1);
 
 				if (to_execute == "true"){
-					ll.ordered();
+					if (iterator_mode){
+						it.ordered();
+					}
+					else{
+						ll.ordered();
+					}
 				}
 				else{
-					ll.ordered();
+					if (iterator_mode){
+						it.ordered(false);
+					}
+					else{
+						ll.ordered(false);
+					}
 				}
 			}
 
-			if (to_execute == "size"){
-				cout << ">> ";
-				cout << ll.size() << endl;
+			else if (contains(to_execute, "size")){
+				if (iterator_mode){
+					cout << "> > ";
+					cout << it.size() << endl;
+				}
+				else{
+					cout << "> > ";
+					cout << ll.size() << endl;
+				}	
 			}
 
-			if (to_execute.find("begin.") != string::npos){
-				ListOfArrays::Iterator it = ll.begin();
+			else if (contains(to_execute, "begin")){
+				iterator_mode = true;
+			}
 
-				to_execute.erase(0, to_execute.find(".") + 1);
+			else if (contains(to_execute, "next")){
+				it++;
 
-				if (to_execute.find("next") != string::npos){
+				if (it == ll.end()){
+					LOAException("ERROR: End of iteration");
+				}
+			}
+
+			else if (contains(to_execute, "average")){
+				cout << "> > " << it.average() << endl;
+			}
+
+			else if(contains(to_execute, "median")){
+				cout << "> > " << it.median() << endl;
+			}
+
+			else if(contains(to_execute, "sum")){
+				cout << "> > " << it.sum() << endl;	
+			}
+
+			else if (contains(to_execute, "at:")){
+				to_execute.erase(0, to_execute.find(":") + 1);
+
+				if (stoi(to_execute) > ll.size()){
+					ex = LOAException("ERROR: Index out of bounds");
+				}
+
+				for (int i = 0; i < stoi(to_execute); i++){
 					it++;
 				}
 
-				if (to_execute == "sum"){
-					cout << ">> " << it.sum() << endl;
-				}
+				cout << "> > ";
+				it.show();
+				cout << endl;
+			}
+
+			else{
+				throw LOAException("ERROR: Unknown operation");
 			}
 
 			command.erase(0, current + 1);
 		}
 	}
+
+	if (ex.get_message() != "N"){
+		throw ex;
+	}
+
 }
 
 int main(){
@@ -463,6 +582,7 @@ int main(){
 		stringstream in(input);
 
 		if (lines == 0){
+			input += ";";
 			ll = splitAndConvert(input);
 		}
 
@@ -475,10 +595,22 @@ int main(){
 	}
 
 	for (int i = 0; i < commands.size(); i++){
-		parseAndExecute(ll, commands[i]);
+		ListOfArrays copy = ll;
+		try{
+			parseAndExecute(copy, commands[i]);
+		}
+		catch(LOAException ex){
+			ex.print();
+			return -1;
+		}	
 	}
 
-	cout << ">" << endl;
+	if (commands.size() == 0){
+		cout << "> >" << endl;
+	}
+	else{
+		cout << ">" << endl;
+	}
 
 	return 0;
 }
